@@ -1,7 +1,7 @@
 import React from 'react';
-import { TouchableOpacity, Text, View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Image } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Alegreya_400Regular } from '@expo-google-fonts/alegreya';
 
@@ -9,7 +9,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import { COLORS } from './src/constants/colors';
 
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -27,34 +27,43 @@ export default function App() {
   return (
     <NavigationContainer>
       <StatusBar style="light" />
-      <Stack.Navigator
+      <Tab.Navigator
         screenOptions={{
-          headerStyle: {
-            backgroundColor: 'black',
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: '#000000',
+            borderTopColor: '#333333',
           },
-          headerTintColor: 'white',
-          headerTitleStyle: {
-            fontFamily: 'Alegreya_400Regular',
-            fontSize: 24,
-          },
-          headerBackTitleVisible: false,
+          tabBarActiveTintColor: '#FFFFFF',
+          tabBarInactiveTintColor: '#888888',
+          tabBarShowLabel: true,
         }}
       >
-        <Stack.Screen
-          name="Chronos"
+        <Tab.Screen
+          name="Journal"
           component={HomeScreen}
-          options={({ navigation }) => ({
-            headerRight: () => (
-              <TouchableOpacity onPress={() => navigation.navigate('History')}>
-                <Text style={{ color: 'white', fontFamily: 'Alegreya_400Regular', fontSize: 18 }}>
-                  History
-                </Text>
-              </TouchableOpacity>
+          options={{
+            tabBarIcon: ({ color }) => (
+              <Image
+                source={require('./assets/journal_icon.png')}
+                style={{ width: 24, height: 24, tintColor: color }}
+              />
             ),
-          })}
+          }}
         />
-        <Stack.Screen name="History" component={HistoryScreen} />
-      </Stack.Navigator>
+        <Tab.Screen
+          name="Past Entries"
+          component={HistoryScreen}
+          options={{
+            tabBarIcon: ({ color }) => (
+              <Image
+                source={require('./assets/past_entries_icon.png')}
+                style={{ width: 24, height: 24, tintColor: color }}
+              />
+            ),
+          }}
+        />
+      </Tab.Navigator>
     </NavigationContainer>
   );
 }

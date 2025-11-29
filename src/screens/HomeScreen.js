@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
     Text,
     TextInput,
     StyleSheet,
-    TouchableOpacity,
     ActivityIndicator,
     Keyboard,
-    TouchableWithoutFeedback
+    TouchableWithoutFeedback,
+    AppState
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/colors';
@@ -18,6 +18,7 @@ export default function HomeScreen() {
     const [entryText, setEntryText] = useState('');
     const [prompt, setPrompt] = useState('');
     const [date, setDate] = useState(new Date());
+    const appState = useRef(AppState.currentState);
 
     useEffect(() => {
         // Set daily prompt
@@ -25,19 +26,21 @@ export default function HomeScreen() {
 
         // Load existing entry
         const loadEntry = async () => {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const savedEntry = await getEntry(todayStr);
+            const dateStr = date.toISOString().split('T')[0];
+            const savedEntry = await getEntry(dateStr);
             if (savedEntry) {
                 setEntryText(savedEntry.text);
+            } else {
+                setEntryText('');
             }
         };
         loadEntry();
-    }, []);
+    }, [date]);
 
     const handleSave = useCallback(async (text) => {
-        const todayStr = new Date().toISOString().split('T')[0];
-        await saveEntry(todayStr, prompt, text);
-    }, [prompt]);
+        const dateStr = date.toISOString().split('T')[0];
+        await saveEntry(dateStr, prompt, text);
+    }, [prompt, date]);
 
     // Auto-save effect with debounce
     useEffect(() => {
@@ -48,10 +51,34 @@ export default function HomeScreen() {
         return () => clearTimeout(timer);
     }, [entryText, handleSave]);
 
-    const onSavePress = () => {
-        handleSave(entryText);
-        Keyboard.dismiss();
-    };
+    // Date change check
+    useEffect(() => {
+        const checkDate = () => {
+            const now = new Date();
+            if (now.getDate() !== date.getDate() ||
+                now.getMonth() !== date.getMonth() ||
+                now.getFullYear() !== date.getFullYear()) {
+                setDate(now);
+            }
+        };
+
+        const interval = setInterval(checkDate, 60000); // Check every minute
+
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (
+                appState.current.match(/inactive|background/) &&
+                nextAppState === 'active'
+            ) {
+                checkDate();
+            }
+            appState.current = nextAppState;
+        });
+
+        return () => {
+            clearInterval(interval);
+            subscription.remove();
+        };
+    }, [date]);
 
     const formattedDate = date.toLocaleDateString('en-US', {
         weekday: 'long',
@@ -77,10 +104,6 @@ export default function HomeScreen() {
                         onChangeText={setEntryText}
                         textAlignVertical="top"
                     />
-
-                    <TouchableOpacity style={styles.saveButton} onPress={onSavePress}>
-                        <Text style={styles.saveButtonText}>Save</Text>
-                    </TouchableOpacity>
                 </View>
             </SafeAreaView>
         </TouchableWithoutFeedback>
@@ -104,10 +127,10 @@ const styles = StyleSheet.create({
     },
     dateText: {
         color: COLORS.text,
-        fontSize: 16,
+        fontSize: 24,
+        fontFamily: 'Alegreya_400Regular',
         textAlign: 'center',
         marginBottom: 20,
-        opacity: 0.8,
     },
     promptText: {
         color: COLORS.text,
@@ -124,16 +147,5 @@ const styles = StyleSheet.create({
         fontFamily: 'Alegreya_400Regular',
         lineHeight: 28,
         marginBottom: 20,
-    },
-    saveButton: {
-        backgroundColor: COLORS.primary,
-        paddingVertical: 15,
-        borderRadius: 30,
-        alignItems: 'center',
-    },
-    saveButtonText: {
-        color: COLORS.background,
-        fontSize: 18,
-        fontWeight: 'bold',
     },
 });
