@@ -30,9 +30,15 @@ export default function App() {
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
+          tabBarLabelStyle: {
+            fontSize: 16,
+            fontFamily: 'Alegreya_400Regular',
+          },
           tabBarStyle: {
             backgroundColor: '#000000',
             borderTopColor: '#333333',
+            height: 105,
+            paddingTop: 15,
           },
           tabBarActiveTintColor: '#FFFFFF',
           tabBarInactiveTintColor: '#888888',
@@ -43,10 +49,10 @@ export default function App() {
           name="Journal"
           component={HomeScreen}
           options={{
-            tabBarIcon: ({ color }) => (
+            tabBarIcon: ({ focused }) => (
               <Image
                 source={require('./assets/journal_icon.png')}
-                style={{ width: 24, height: 24, tintColor: color }}
+                style={{ width: 40, height: 40, opacity: focused ? 1 : 0.5 }}
               />
             ),
           }}
@@ -55,10 +61,10 @@ export default function App() {
           name="Past Entries"
           component={HistoryScreen}
           options={{
-            tabBarIcon: ({ color }) => (
+            tabBarIcon: ({ focused }) => (
               <Image
                 source={require('./assets/past_entries_icon.png')}
-                style={{ width: 24, height: 24, tintColor: color }}
+                style={{ width: 40, height: 40, opacity: focused ? 1 : 0.5 }}
               />
             ),
           }}
