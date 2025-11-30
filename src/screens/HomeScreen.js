@@ -80,6 +80,10 @@ export default function HomeScreen() {
         };
     }, [date]);
 
+
+
+
+
     const formattedDate = date.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -147,5 +151,10 @@ const styles = StyleSheet.create({
         fontFamily: 'Alegreya_400Regular',
         lineHeight: 28,
         marginBottom: 20,
+        borderColor: '#333333',
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: 16,
+        backgroundColor: '#0A0A0A',
     },
 });

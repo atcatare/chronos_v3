@@ -40,3 +40,13 @@ export const getAllEntries = async () => {
         return [];
     }
 };
+
+export const deleteEntry = async (date) => {
+    try {
+        const key = `${STORAGE_KEY_PREFIX}${date}`;
+        await AsyncStorage.removeItem(key);
+        console.log(`Deleted entry for ${date}`);
+    } catch (e) {
+        console.error('Failed to delete entry', e);
+    }
+};
