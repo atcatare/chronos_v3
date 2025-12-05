@@ -13,10 +13,15 @@
       "backgroundColor": "#000000"
     },
     "ios": {
+      "buildNumber": "2",
       "supportsTablet": true,
-      "bundleIdentifier": "com.atcatare.chronos"
+      "bundleIdentifier": "com.atcatare.chronos",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
