@@ -77,6 +77,7 @@ class NotificationService {
         sound: true,
       },
       trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
         hour: time.getHours(),
         minute: time.getMinutes(),
         repeats: true,
