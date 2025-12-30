@@ -2,8 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllEntries } from '../utils/storage';
 import ModelService from '../utils/ModelService';
-import { Asset } from 'expo-asset';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export const AIContext = createContext();
 
@@ -12,9 +11,12 @@ const KEYS = {
     LAST_INSIGHT_TEXT: 'last_insight_text',
 };
 
+const MODEL_URL = 'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf?download=true';
+
 export const AIProvider = ({ children }) => {
     const [dailyInsight, setDailyInsight] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [downloadProgress, setDownloadProgress] = useState(0);
 
     const loadDailyInsight = async () => {
         setIsLoading(true);
@@ -55,6 +57,29 @@ export const AIProvider = ({ children }) => {
         }
     };
 
+    const downloadModel = async (targetPath) => {
+        const downloadResumable = FileSystem.createDownloadResumable(
+            MODEL_URL,
+            targetPath,
+            {},
+            (downloadProgress) => {
+                const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
+                const percentage = Math.round(progress * 100);
+                setDownloadProgress(percentage);
+                setDailyInsight(`Downloading AI Model... (${percentage}%)`);
+            }
+        );
+
+        try {
+            const { uri } = await downloadResumable.downloadAsync();
+            console.log('Finished downloading to ', uri);
+            return true;
+        } catch (e) {
+            console.error('Download error:', e);
+            return false;
+        }
+    };
+
     const ensureModelExists = async () => {
         try {
             const modelPath = await ModelService.getModelPath();
@@ -65,25 +90,9 @@ export const AIProvider = ({ children }) => {
                 return true;
             }
 
-            console.log('Model not found at target path. Attempting to load from assets...');
-            // Load from assets
-            const modelAsset = Asset.fromModule(require('../../assets/models/tinyllama-1.1b-chat.gguf'));
-            await modelAsset.downloadAsync(); // Helper to ensure localUri is available
-
-            if (!modelAsset.localUri) {
-                throw new Error('Failed to get localUri for model asset');
-            }
-
-            console.log('Model asset loaded from:', modelAsset.localUri);
-
-            // Copy to document directory
-            await FileSystem.copyAsync({
-                from: modelAsset.localUri,
-                to: modelPath
-            });
-
-            console.log('Model successfully copied to:', modelPath);
-            return true;
+            console.log('Model not found. Starting download...');
+            const success = await downloadModel(modelPath);
+            return success;
 
         } catch (error) {
             console.error('Failed to ensure model exists:', error);
@@ -96,19 +105,19 @@ export const AIProvider = ({ children }) => {
         console.log('Generating insight with prompt:', promptString);
 
         try {
-            // Ensure model is ready (bundled or downloaded)
+            // Ensure model is ready (downloaded)
             const modelReady = await ensureModelExists();
 
             if (!modelReady) {
-                const errorMsg = "Failed to load offline model from assets.";
+                const errorMsg = "Failed to download AI model. Check internet connection and restart app.";
                 console.warn(errorMsg);
                 setDailyInsight(errorMsg);
-                await AsyncStorage.multiSet([
-                    [KEYS.LAST_INSIGHT_DATE, todayString],
-                    [KEYS.LAST_INSIGHT_TEXT, errorMsg]
-                ]);
+                // Do not save error to storage so we retry next time
                 return;
             }
+
+            // Reset insight text to "Generating..." after download completes
+            setDailyInsight("Generating health insights...");
 
             // Run Inference
             const insight = await ModelService.generateInsight(promptString);
@@ -125,6 +134,7 @@ export const AIProvider = ({ children }) => {
             setDailyInsight("Sentient AI is currently offline. Please try again later.");
         } finally {
             setIsLoading(false);
+            setDownloadProgress(0); // Reset progress
         }
     };
 
@@ -134,6 +144,7 @@ export const AIProvider = ({ children }) => {
                 dailyInsight,
                 isLoading,
                 loadDailyInsight,
+                downloadProgress,
             }}
         >
             {children}
