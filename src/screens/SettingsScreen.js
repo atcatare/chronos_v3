@@ -1,9 +1,10 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Platform, ScrollView, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SettingsContext } from '../context/SettingsContext';
 import { COLORS } from '../constants/colors';
+import { saveEntry } from '../utils/storage';
 
 export default function SettingsScreen() {
     const { isReminderEnabled, reminderTime, toggleReminder, updateTime } = useContext(SettingsContext);
@@ -21,6 +22,25 @@ export default function SettingsScreen() {
         date.setHours(time.hour);
         date.setMinutes(time.minute);
         return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    };
+
+    const generateDummyData = async () => {
+        const today = new Date();
+        const dummyEntries = [
+            { offset: 0, text: "I felt amazing today! Went for a run and drank plenty of water. My mind feels clear.", prompt: "How is your energy level today compared to yesterday?" },
+            { offset: 1, text: "Feeling a bit sluggish. I think I ate too much sugar yesterday. Hard to focus.", prompt: "Did you feel mentally clear or foggy today?" },
+            { offset: 2, text: "Had a terrible headache in the afternoon. Need to track my caffeine intake.", prompt: "Did you experience any physical discomfort today? If so, where?" },
+            { offset: 3, text: "Slept 8 hours and woke up refreshed. Best sleep I've had in weeks.", prompt: "How did you sleep last night, and how does it feel now?" },
+            { offset: 4, text: "Feeling okay, but a bit anxious about the upcoming week.", prompt: "How did your mood fluctuate throughout the day?" }
+        ];
+
+        for (const entry of dummyEntries) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - entry.offset);
+            const dateStr = date.toISOString().split('T')[0];
+            await saveEntry(dateStr, entry.prompt, entry.text);
+        }
+        Alert.alert("Success", "Dummy data generated! Please restart the app or navigate to the Insights tab to see the results.");
     };
 
     return (
@@ -68,6 +88,17 @@ export default function SettingsScreen() {
                             themeVariant="dark"
                         />
                     )}
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Developer Tools</Text>
+                    <TouchableOpacity
+                        style={styles.row}
+                        onPress={generateDummyData}
+                    >
+                        <Text style={styles.label}>Generate Dummy Data</Text>
+                        <Text style={styles.value}>Tap to Run</Text>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
         </SafeAreaView>

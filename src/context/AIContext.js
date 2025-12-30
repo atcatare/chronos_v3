@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllEntries } from '../utils/storage';
 import ModelService from '../utils/ModelService';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 
 export const AIContext = createContext();
 
@@ -16,6 +16,7 @@ const MODEL_URL = 'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF
 export const AIProvider = ({ children }) => {
     const [dailyInsight, setDailyInsight] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    // Track download progress for UI feedback
     const [downloadProgress, setDownloadProgress] = useState(0);
 
     const loadDailyInsight = async () => {
@@ -67,7 +68,8 @@ export const AIProvider = ({ children }) => {
                 const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
                 const percentage = Math.round(progress * 100);
                 setDownloadProgress(percentage);
-                setDailyInsight(`Downloading AI Model... (${percentage}%)`);
+                // Update text to give immediate feedback
+                setDailyInsight(`Downloading AI Model... ${percentage}%`);
             }
         );
 
@@ -145,7 +147,6 @@ export const AIProvider = ({ children }) => {
                 dailyInsight,
                 isLoading,
                 loadDailyInsight,
-                downloadProgress,
             }}
         >
             {children}

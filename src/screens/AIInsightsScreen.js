@@ -29,15 +29,23 @@ export default function AIInsightsScreen() {
                 {isLoading ? (
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" color={COLORS.primary} />
-                        <Text style={styles.loadingText}>Generating insights...</Text>
+                        <Text style={styles.loadingText}>
+                            {dailyInsight.includes('Downloading') ? dailyInsight : 'Generating insights...'}
+                        </Text>
                     </View>
                 ) : (
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <Text style={styles.date}>{formatDate()}</Text>
 
-                        <View style={styles.card}>
-                            <Text style={styles.insightText}>{dailyInsight}</Text>
-                        </View>
+                        {dailyInsight === "Write at least one entry to receive AI insights" ? (
+                            <View style={styles.emptyStateContainer}>
+                                <Text style={styles.emptyStateText}>{dailyInsight}</Text>
+                            </View>
+                        ) : (
+                            <View style={styles.card}>
+                                <Text style={styles.insightText}>{dailyInsight}</Text>
+                            </View>
+                        )}
                     </ScrollView>
                 )}
             </View>
@@ -94,5 +102,17 @@ const styles = StyleSheet.create({
         fontFamily: 'Alegreya_400Regular',
         color: '#E0E0E0',
         lineHeight: 28,
+    },
+    emptyStateContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 50,
+    },
+    emptyStateText: {
+        fontSize: 18,
+        fontFamily: 'Alegreya_400Regular',
+        color: '#888',
+        textAlign: 'center',
     },
 });

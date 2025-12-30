@@ -1,5 +1,5 @@
 import { initLlama, LlamaContext } from 'llama.rn';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 
 class ModelService {
     constructor() {
