@@ -25,20 +25,16 @@ export default function SettingsScreen() {
     };
 
     const generateDummyData = async () => {
-        const today = new Date();
         const dummyEntries = [
-            { offset: 0, text: "I felt amazing today! Went for a run and drank plenty of water. My mind feels clear.", prompt: "How is your energy level today compared to yesterday?" },
-            { offset: 1, text: "Feeling a bit sluggish. I think I ate too much sugar yesterday. Hard to focus.", prompt: "Did you feel mentally clear or foggy today?" },
-            { offset: 2, text: "Had a terrible headache in the afternoon. Need to track my caffeine intake.", prompt: "Did you experience any physical discomfort today? If so, where?" },
-            { offset: 3, text: "Slept 8 hours and woke up refreshed. Best sleep I've had in weeks.", prompt: "How did you sleep last night, and how does it feel now?" },
-            { offset: 4, text: "Feeling okay, but a bit anxious about the upcoming week.", prompt: "How did your mood fluctuate throughout the day?" }
+            { date: '2025-12-10', prompt: "How is your energy level?", text: "Started the week feeling very tired. I didn't sleep well last night." },
+            { date: '2025-12-11', prompt: "Did you engage in physical activity?", text: "Went for a light walk. Feeling a bit better but still sluggish." },
+            { date: '2025-12-12', prompt: "How is your mood?", text: "Mood is improving. I ate a healthy salad and drank more water." },
+            { date: '2025-12-13', prompt: "How did you sleep?", text: "Slept 8 hours! Feeling energized and happy today." },
+            { date: '2025-12-14', prompt: "What are you grateful for?", text: "Grateful for my health. I went for a run and feel fantastic." }
         ];
 
         for (const entry of dummyEntries) {
-            const date = new Date(today);
-            date.setDate(today.getDate() - entry.offset);
-            const dateStr = date.toISOString().split('T')[0];
-            await saveEntry(dateStr, entry.prompt, entry.text);
+            await saveEntry(entry.date, entry.prompt, entry.text);
         }
         Alert.alert("Success", "Dummy data generated! Please restart the app or navigate to the Insights tab to see the results.");
     };

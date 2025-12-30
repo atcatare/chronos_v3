@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
     View,
     Text,
@@ -20,22 +21,24 @@ export default function HomeScreen() {
     const [date, setDate] = useState(new Date());
     const appState = useRef(AppState.currentState);
 
-    useEffect(() => {
-        // Set daily prompt
-        setPrompt(getDailyPrompt());
+    useFocusEffect(
+        useCallback(() => {
+            // Set daily prompt
+            setPrompt(getDailyPrompt());
 
-        // Load existing entry
-        const loadEntry = async () => {
-            const dateStr = date.toISOString().split('T')[0];
-            const savedEntry = await getEntry(dateStr);
-            if (savedEntry) {
-                setEntryText(savedEntry.text);
-            } else {
-                setEntryText('');
-            }
-        };
-        loadEntry();
-    }, [date]);
+            // Load existing entry
+            const loadEntry = async () => {
+                const dateStr = date.toISOString().split('T')[0];
+                const savedEntry = await getEntry(dateStr);
+                if (savedEntry) {
+                    setEntryText(savedEntry.text);
+                } else {
+                    setEntryText('');
+                }
+            };
+            loadEntry();
+        }, [date])
+    );
 
     const handleSave = useCallback(async (text) => {
         const dateStr = date.toISOString().split('T')[0];

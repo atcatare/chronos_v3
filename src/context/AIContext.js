@@ -34,9 +34,9 @@ export const AIProvider = ({ children }) => {
                 }
             }
 
-            // Retrieve all entries and slice the top 20 to prevent context window overflow
+            // Retrieve all entries and slice the top 7 to prevent context window overflow
             const allEntries = await getAllEntries();
-            const entries = allEntries.slice(0, 20);
+            const entries = allEntries.slice(0, 7);
 
             if (!entries || entries.length === 0) {
                 setDailyInsight("Write at least one entry to receive AI insights");
@@ -44,12 +44,16 @@ export const AIProvider = ({ children }) => {
                 return;
             }
 
-            // Format prompt string
-            let promptString = "You are a helpful health assistant. Analyze the following journal entries to provide a 100-word paragraph of health insights. Treat more recent entries as more important.\n\n";
+            // Format prompt string with ChatML structure
+            let systemPrompt = "You are a helpful health assistant. Analyze the following journal entries and write a single 100-word paragraph summarizing the user's health, focusing on sleep, mood, and activity patterns.";
+            let userPrompt = "";
 
             entries.forEach(entry => {
-                promptString += `Date: ${entry.date} \n Prompt: ${entry.prompt} \n Response: ${entry.text} \n\n`;
+                userPrompt += `Date: ${entry.date}\nPrompt: ${entry.prompt}\nResponse: ${entry.text}\n\n`;
             });
+
+            // Construct full ChatML prompt
+            let promptString = `<|system|>\n${systemPrompt}\n</s>\n<|user|>\n${userPrompt}\n</s>\n<|assistant|>`;
 
             await generateNewInsight(todayString, promptString);
         } catch (error) {
