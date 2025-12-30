@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllEntries } from '../utils/storage';
 import ModelService from '../utils/ModelService';
@@ -62,8 +63,36 @@ export const AIProvider = ({ children }) => {
     // Removed downloadModel as we copy from bundle
 
     const ensureModelExists = async () => {
-        // Temporarily bypassing check to fix build crash
-        return true;
+        const modelDest = await ModelService.getModelPath();
+        const fileInfo = await FileSystem.getInfoAsync(modelDest);
+
+        if (fileInfo.exists) {
+            console.log('Model ready at:', modelDest);
+            return true;
+        }
+
+        console.log('Copying model from bundle...');
+        setDailyInsight("Initializing offline model (this happens once)...");
+
+        try {
+            if (Platform.OS === 'android') {
+                await FileSystem.copyAsync({
+                    from: 'file:///android_asset/tinyllama-1.1b-chat.gguf',
+                    to: modelDest
+                });
+            } else {
+                // iOS: File is in the Main Bundle
+                await FileSystem.copyAsync({
+                    from: `${FileSystem.mainBundleDirectory}/tinyllama-1.1b-chat.gguf`,
+                    to: modelDest
+                });
+            }
+            return true;
+        } catch (e) {
+            console.error('Model setup failed:', e);
+            setDailyInsight("Error initializing AI model.");
+            return false;
+        }
     };
 
     const generateNewInsight = async (todayString, promptString) => {
