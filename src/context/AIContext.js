@@ -45,15 +45,15 @@ export const AIProvider = ({ children }) => {
             }
 
             // Format prompt string with ChatML structure
-            let systemPrompt = "You are a helpful health assistant. Analyze the following journal entries and write a single 100-word paragraph summarizing the user's health, focusing on sleep, mood, and activity patterns.";
+            // We strip the prompt question to save tokens and focus on the user's entry text
             let userPrompt = "";
 
             entries.forEach(entry => {
-                userPrompt += `Date: ${entry.date}\nPrompt: ${entry.prompt}\nResponse: ${entry.text}\n\n`;
+                userPrompt += `- Date: ${entry.date}, Entry: ${entry.text}\n`;
             });
 
             // Construct full ChatML prompt
-            let promptString = `<|system|>\n${systemPrompt}\n</s>\n<|user|>\n${userPrompt}\n</s>\n<|assistant|>`;
+            let promptString = `<|system|>\nYou are a health assistant. Summarize the user's health based on the journal entries provided below. Focus on sleep, mood, and activity patterns. Do not list the entries yourself.\n</s>\n<|user|>\n${userPrompt}\n\nPlease provide a short 100-word summary of my health trends.\n</s>\n<|assistant|>`;
 
             await generateNewInsight(todayString, promptString);
         } catch (error) {
