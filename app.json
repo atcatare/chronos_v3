@@ -34,7 +34,8 @@
     },
     "plugins": [
       "expo-font",
-      "llama.rn"
+      "llama.rn",
+      "./plugins/withGguf"
     ],
     "extra": {
       "eas": {
