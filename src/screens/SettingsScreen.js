@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SettingsContext } from '../context/SettingsContext';
 import { COLORS } from '../constants/colors';
-import { saveEntry } from '../utils/storage';
+import { saveEntry, clearAllEntries } from '../utils/storage';
 
 export default function SettingsScreen() {
     const { isReminderEnabled, reminderTime, toggleReminder, updateTime } = useContext(SettingsContext);
@@ -37,6 +37,11 @@ export default function SettingsScreen() {
             await saveEntry(entry.date, entry.prompt, entry.text);
         }
         Alert.alert("Success", "Dummy data generated! Please restart the app or navigate to the Insights tab to see the results.");
+    };
+
+    const handleClearData = async () => {
+        await clearAllEntries();
+        Alert.alert("Success", "All entries deleted.");
     };
 
     return (
@@ -94,6 +99,14 @@ export default function SettingsScreen() {
                     >
                         <Text style={styles.label}>Generate Dummy Data</Text>
                         <Text style={styles.value}>Tap to Run</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.row}
+                        onPress={handleClearData}
+                    >
+                        <Text style={styles.label}>Clear All Journal Entries</Text>
+                        <Text style={[styles.value, { color: COLORS.error || '#FF6B6B' }]}>Clear</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

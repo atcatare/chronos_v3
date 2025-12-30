@@ -50,3 +50,16 @@ export const deleteEntry = async (date) => {
         console.error('Failed to delete entry', e);
     }
 };
+
+export const clearAllEntries = async () => {
+    try {
+        const keys = await AsyncStorage.getAllKeys();
+        const journalKeys = keys.filter(key => key.startsWith(STORAGE_KEY_PREFIX));
+        if (journalKeys.length > 0) {
+            await AsyncStorage.multiRemove(journalKeys);
+            console.log('All journal entries cleared');
+        }
+    } catch (e) {
+        console.error('Failed to clear all entries', e);
+    }
+};

@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllEntries } from '../utils/storage';
 import ModelService from '../utils/ModelService';
 import * as FileSystem from 'expo-file-system';
+import { Asset } from 'expo-asset';
 
 export const AIContext = createContext();
 
@@ -11,7 +12,8 @@ const KEYS = {
     LAST_INSIGHT_TEXT: 'last_insight_text',
 };
 
-const MODEL_URL = 'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf?download=true';
+// Model URL removed as we are now bundling the model
+// const MODEL_URL = '...';
 
 export const AIProvider = ({ children }) => {
     const [dailyInsight, setDailyInsight] = useState('');
@@ -34,9 +36,9 @@ export const AIProvider = ({ children }) => {
                 }
             }
 
-            // Retrieve all entries and slice the top 7 to prevent context window overflow
+            // Retrieve all entries and slice the top 5 to prevent context window overflow
             const allEntries = await getAllEntries();
-            const entries = allEntries.slice(0, 7);
+            const entries = allEntries.slice(0, 5);
 
             if (!entries || entries.length === 0) {
                 setDailyInsight("Write at least one entry to receive AI insights");
@@ -44,16 +46,10 @@ export const AIProvider = ({ children }) => {
                 return;
             }
 
-            // Format prompt string with ChatML structure
-            // We strip the prompt question to save tokens and focus on the user's entry text
-            let userPrompt = "";
+            // Format prompt string with strict summarization directive
+            const promptString = "<|system|>\nYou are a health assistant. Read the journal entries below. Write ONE short paragraph (approx 50 words) summarizing the user's sleep and mood trends. Do NOT list the entries.\n</s>\n<|user|>\n" + entries.map(e => `> ${e.text}`).join("\n\n") + "\n\nWrite the summary now:\n</s>\n<|assistant|>";
 
-            entries.forEach(entry => {
-                userPrompt += `- Date: ${entry.date}, Entry: ${entry.text}\n`;
-            });
-
-            // Construct full ChatML prompt
-            let promptString = `<|system|>\nYou are a health assistant. Summarize the user's health based on the journal entries provided below. Focus on sleep, mood, and activity patterns. Do not list the entries yourself.\n</s>\n<|user|>\n${userPrompt}\n\nPlease provide a short 100-word summary of my health trends.\n</s>\n<|assistant|>`;
+            console.log("AI Prompt Sent:", promptString);
 
             await generateNewInsight(todayString, promptString);
         } catch (error) {
@@ -63,29 +59,7 @@ export const AIProvider = ({ children }) => {
         }
     };
 
-    const downloadModel = async (targetPath) => {
-        const downloadResumable = FileSystem.createDownloadResumable(
-            MODEL_URL,
-            targetPath,
-            {},
-            (downloadProgress) => {
-                const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
-                const percentage = Math.round(progress * 100);
-                setDownloadProgress(percentage);
-                // Update text to give immediate feedback
-                setDailyInsight(`Downloading AI Model... ${percentage}%`);
-            }
-        );
-
-        try {
-            const { uri } = await downloadResumable.downloadAsync();
-            console.log('Finished downloading to ', uri);
-            return true;
-        } catch (e) {
-            console.error('Download error:', e);
-            return false;
-        }
-    };
+    // Removed downloadModel as we copy from bundle
 
     const ensureModelExists = async () => {
         try {
@@ -97,9 +71,24 @@ export const AIProvider = ({ children }) => {
                 return true;
             }
 
-            console.log('Model not found. Starting download...');
-            const success = await downloadModel(modelPath);
-            return success;
+            console.log('Model not found. Initializing from bundle...');
+            setDailyInsight("Initializing offline model...");
+
+            const asset = Asset.fromModule(require('../../assets/models/tinyllama-1.1b-chat.gguf'));
+            await asset.downloadAsync();
+
+            if (!asset.localUri) {
+                console.error("Asset failed to load");
+                return false;
+            }
+
+            await FileSystem.copyAsync({
+                from: asset.localUri,
+                to: modelPath
+            });
+
+            console.log('Model copied to ', modelPath);
+            return true;
 
         } catch (error) {
             console.error('Failed to ensure model exists:', error);
@@ -116,10 +105,9 @@ export const AIProvider = ({ children }) => {
             const modelReady = await ensureModelExists();
 
             if (!modelReady) {
-                const errorMsg = "Failed to download AI model. Check internet connection and restart app.";
+                const errorMsg = "Failed to initialize AI model. Please restart app.";
                 console.warn(errorMsg);
                 setDailyInsight(errorMsg);
-                // Do not save error to storage so we retry next time
                 return;
             }
 
