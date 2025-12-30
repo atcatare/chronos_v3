@@ -33,8 +33,9 @@ export const AIProvider = ({ children }) => {
                 }
             }
 
-            // Retrieve all entries
-            const entries = await getAllEntries();
+            // Retrieve all entries and slice the top 20 to prevent context window overflow
+            const allEntries = await getAllEntries();
+            const entries = allEntries.slice(0, 20);
 
             if (!entries || entries.length === 0) {
                 setDailyInsight("Write at least one entry to receive AI insights");
