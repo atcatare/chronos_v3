@@ -19,11 +19,13 @@ const KEYS = {
 export const AIProvider = ({ children }) => {
     const [dailyInsight, setDailyInsight] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
     // Track download progress for UI feedback
     const [downloadProgress, setDownloadProgress] = useState(0);
 
     const loadDailyInsight = async () => {
         setIsLoading(true);
+        setError(null);
         try {
             const todayString = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
             const lastDate = await AsyncStorage.getItem(KEYS.LAST_INSIGHT_DATE);
@@ -48,19 +50,18 @@ export const AIProvider = ({ children }) => {
             }
 
             // Format prompt string with strict summarization directive
-            const promptString = "<|system|>\nYou are a health assistant. Read the journal entries below. Write ONE short paragraph (approx 50 words) summarizing the user's sleep and mood trends. Do NOT list the entries.\n</s>\n<|user|>\n" + entries.map(e => `> ${e.text}`).join("\n\n") + "\n\nWrite the summary now:\n</s>\n<|assistant|>";
+            const promptString = "<|system|>\nYou are a health assistant. Read the journal entries below. Write ONE short paragraph (approx 100 words) summarizing the user's sleep and mood trends. Do NOT list the entries.\n</s>\n<|user|>\n" + entries.map(e => `> ${e.text}`).join("\n\n") + "\n\nWrite the summary now:\n</s>\n<|assistant|>";
 
             console.log("AI Prompt Sent:", promptString);
 
             await generateNewInsight(todayString, promptString);
         } catch (error) {
             console.error('Failed to load daily insight:', error);
+            setError("Failed to load insights. Please try again.");
         } finally {
             setIsLoading(false);
         }
     };
-
-    // Removed downloadModel as we copy from bundle
 
     const ensureModelExists = async () => {
         const modelDest = await ModelService.getModelPath();
@@ -90,13 +91,14 @@ export const AIProvider = ({ children }) => {
             return true;
         } catch (e) {
             console.error('Model setup failed:', e);
-            setDailyInsight("Error initializing AI model.");
+            setError("Error initializing AI model.");
             return false;
         }
     };
 
     const generateNewInsight = async (todayString, promptString) => {
         setIsLoading(true);
+        setError(null);
         console.log('Generating insight with prompt:', promptString);
 
         try {
@@ -106,7 +108,7 @@ export const AIProvider = ({ children }) => {
             if (!modelReady) {
                 const errorMsg = "Failed to initialize AI model. Please restart app.";
                 console.warn(errorMsg);
-                setDailyInsight(errorMsg);
+                setError(errorMsg);
                 return;
             }
 
@@ -125,7 +127,7 @@ export const AIProvider = ({ children }) => {
 
         } catch (error) {
             console.error('Error generating insight:', error);
-            setDailyInsight("Sentient AI is currently offline. Please try again later.");
+            setError("Sentient AI is currently offline. Please try again later.");
         } finally {
             setIsLoading(false);
             setDownloadProgress(0); // Reset progress
@@ -137,6 +139,7 @@ export const AIProvider = ({ children }) => {
             value={{
                 dailyInsight,
                 isLoading,
+                error,
                 loadDailyInsight,
             }}
         >
