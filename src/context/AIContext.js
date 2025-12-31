@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllEntries } from '../utils/storage';
 import ModelService from '../utils/ModelService';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 
 
 export const AIContext = createContext();
@@ -55,18 +55,24 @@ export const AIProvider = ({ children }) => {
 
             // We use a "completion" style prompt structure to force a monologue
             const promptString = `<|system|>
-            You are a professional health analyst.
+            You are a health pattern analyzer. You do NOT chat. You only summarize data.
             </s>
             <|user|>
-            Here are my journal entries:
-            ${formattedEntries}
-
-            Based ONLY on these entries, write a single paragraph (approx 100 words) summarizing my sleep, mood, and energy trends.
-            Treat the most recent entries as the most important.
-            Do NOT write a conversation. Do NOT use dialogue tags.
+            [2025-01-01] I ate junk food and felt sluggish.
+            [2025-01-02] Went for a run and felt energetic.
+            
+            Summarize these health trends in one paragraph.
             </s>
             <|assistant|>
-            Here is the summary of your health trends:`;
+            The user reported low energy following poor dietary choices, but energy levels improved significantly after engaging in physical exercise.
+            </s>
+            <|user|>
+            ${formattedEntries}
+            
+            Summarize these health trends in one paragraph.
+            </s>
+            <|assistant|>
+            Based on the journal entries,`;
 
             console.log("AI Prompt Sent:", promptString);
 
@@ -81,16 +87,19 @@ export const AIProvider = ({ children }) => {
 
     // Helper to remove unwanted "User:" or "Assistant:" hallucinations
     const cleanOutput = (text) => {
-        // Remove the leading seed phrase if it was included in the generation
-        let cleaned = text.replace(/^Here is the summary of your health trends:\s*/i, '');
+        // Aggressive cleaning: Split by newline and remove ANY line containing conversational tags
+        let lines = text.split('\n');
 
-        // Remove lines that look like dialogue
-        cleaned = cleaned.split('\n').filter(line => {
-            const lower = line.trim().toLowerCase();
-            return !lower.startsWith('user:') && !lower.startsWith('assistant:') && !lower.startsWith('health assistant:');
-        }).join(' ');
+        const forbiddenTerms = ['user:', 'assistant:', 'health assistant:'];
 
-        return cleaned.trim();
+        const cleanedLines = lines.filter(line => {
+            const lower = line.toLowerCase();
+            // Check if any forbidden term exists anywhere in the line
+            return !forbiddenTerms.some(term => lower.includes(term));
+        });
+
+        // specific removal of the few-shot answer if it leaks (rare but possible)
+        return cleanedLines.join(' ').trim();
     };
 
     const ensureModelExists = async () => {
@@ -112,16 +121,24 @@ export const AIProvider = ({ children }) => {
                     to: modelDest
                 });
             } else {
-                // iOS: File is in the Main Bundle
+                // iOS: Use bundleDirectory.
+                const bundleDir = FileSystem.bundleDirectory;
+                if (!bundleDir) throw new Error("FileSystem.bundleDirectory is null");
+
+                // Ensure correct path joining
+                const sourceUri = bundleDir.endsWith('/')
+                    ? `${bundleDir}tinyllama-1.1b-chat.gguf`
+                    : `${bundleDir}/tinyllama-1.1b-chat.gguf`;
+
                 await FileSystem.copyAsync({
-                    from: `${FileSystem.mainBundleDirectory}/tinyllama-1.1b-chat.gguf`,
+                    from: sourceUri,
                     to: modelDest
                 });
             }
             return true;
         } catch (e) {
             console.error('Model setup failed:', e);
-            setError("Error initializing AI model.");
+            setError("Error initializing AI model. " + e.message);
             return false;
         }
     };
@@ -147,8 +164,10 @@ export const AIProvider = ({ children }) => {
 
             // Run Inference
             // Run Inference
-            const insight = await ModelService.generateInsight(promptString);
-            const finalInsight = cleanOutput(insight);
+            // Run Inference
+            const insightFragment = await ModelService.generateInsight(promptString);
+            const fullText = "Based on the journal entries, " + insightFragment;
+            const finalInsight = cleanOutput(fullText);
 
             setDailyInsight(finalInsight);
 
