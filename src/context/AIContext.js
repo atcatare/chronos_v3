@@ -50,24 +50,23 @@ export const AIProvider = ({ children }) => {
                 return;
             }
 
-            // strict formatting
-            const formattedEntries = entries.map(e => `[${e.date}] ${e.text}`).join("\n");
+            // strict formatting - reverse entries so they are in chronological order (Oldest -> Newest)
+            const formattedEntries = entries.reverse().map(e => `[${e.date}] ${e.text}`).join("\n");
 
             // We use a "completion" style prompt structure to force a monologue
             const promptString = `<|system|>
-    You are a professional health analyst. 
-    Analyze the journal entries below.
-    Write a single, continuous paragraph (approx 100 words) summarizing the user's sleep, mood, and energy trends.
-    Do not use dialogue tags. Do not write a conversation.
-    </s>
-    <|user|>
-    Journal Entries:
-    ${formattedEntries}
+            You are a professional health analyst.
+            </s>
+            <|user|>
+            Here are my journal entries:
+            ${formattedEntries}
 
-    Please write the summary paragraph now.
-    </s>
-    <|assistant|>
-    Health Analysis:`;
+            Based ONLY on these entries, write a single paragraph (approx 100 words) summarizing my sleep, mood, and energy trends.
+            Treat the most recent entries as the most important.
+            Do NOT write a conversation. Do NOT use dialogue tags.
+            </s>
+            <|assistant|>
+            Here is the summary of your health trends:`;
 
             console.log("AI Prompt Sent:", promptString);
 
@@ -82,12 +81,12 @@ export const AIProvider = ({ children }) => {
 
     // Helper to remove unwanted "User:" or "Assistant:" hallucinations
     const cleanOutput = (text) => {
-        // Remove the leading "Health Analysis:" if it was included in the generation
-        let cleaned = text.replace(/^Health Analysis:\s*/i, '');
+        // Remove the leading seed phrase if it was included in the generation
+        let cleaned = text.replace(/^Here is the summary of your health trends:\s*/i, '');
 
         // Remove lines that look like dialogue
         cleaned = cleaned.split('\n').filter(line => {
-            const lower = line.toLowerCase();
+            const lower = line.trim().toLowerCase();
             return !lower.startsWith('user:') && !lower.startsWith('assistant:') && !lower.startsWith('health assistant:');
         }).join(' ');
 
