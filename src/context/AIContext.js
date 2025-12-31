@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllEntries } from '../utils/storage';
 import ModelService from '../utils/ModelService';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 
 export const AIContext = createContext();
@@ -54,24 +54,24 @@ export const AIProvider = ({ children }) => {
             const formattedEntries = entries.reverse().map(e => `[${e.date}] ${e.text}`).join("\n");
 
             // We use a "completion" style prompt structure to force a monologue
-            const promptString = `<|system|>
+            const promptString = `<|im_start|>system
             You are a health pattern analyzer. You do NOT chat. You only summarize data.
-            </s>
-            <|user|>
+            <|im_end|>
+            <|im_start|>user
             [2025-01-01] I ate junk food and felt sluggish.
             [2025-01-02] Went for a run and felt energetic.
             
             Summarize these health trends in one paragraph.
-            </s>
-            <|assistant|>
+            <|im_end|>
+            <|im_start|>assistant
             The user reported low energy following poor dietary choices, but energy levels improved significantly after engaging in physical exercise.
-            </s>
-            <|user|>
+            <|im_end|>
+            <|im_start|>user
             ${formattedEntries}
             
             Summarize these health trends in one paragraph.
-            </s>
-            <|assistant|>
+            <|im_end|>
+            <|im_start|>assistant
             Based on the journal entries,`;
 
             console.log("AI Prompt Sent:", promptString);
@@ -117,7 +117,7 @@ export const AIProvider = ({ children }) => {
         try {
             if (Platform.OS === 'android') {
                 await FileSystem.copyAsync({
-                    from: 'file:///android_asset/tinyllama-1.1b-chat.gguf',
+                    from: 'file:///android_asset/qwen2.5-0.5b-instruct-q4_k_m.gguf',
                     to: modelDest
                 });
             } else {
@@ -127,8 +127,8 @@ export const AIProvider = ({ children }) => {
 
                 // Ensure correct path joining
                 const sourceUri = bundleDir.endsWith('/')
-                    ? `${bundleDir}tinyllama-1.1b-chat.gguf`
-                    : `${bundleDir}/tinyllama-1.1b-chat.gguf`;
+                    ? `${bundleDir}qwen2.5-0.5b-instruct-q4_k_m.gguf`
+                    : `${bundleDir}/qwen2.5-0.5b-instruct-q4_k_m.gguf`;
 
                 await FileSystem.copyAsync({
                     from: sourceUri,

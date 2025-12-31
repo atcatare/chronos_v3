@@ -7,7 +7,7 @@ class ModelService {
         this.isInitialized = false;
         // The model should be placed in the document directory
         // You can change this filename to match your specific model
-        this.modelFilename = 'tinyllama-1.1b-chat.gguf';
+        this.modelFilename = 'qwen2.5-0.5b-instruct-q4_k_m.gguf';
     }
 
     async getModelPath() {
@@ -62,7 +62,7 @@ class ModelService {
                 temperature: 0.0, // Strict mode
                 top_k: 40,
                 top_p: 0.95,
-                stop: ["<|user|>", "User:", "Assistant:"], // Force stop if it tries to chat
+                stop: ["<|im_end|>", "<|im_start|>"], // Force stop if it tries to chat
             });
             return result.text;
         } catch (error) {

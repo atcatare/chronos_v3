@@ -2,8 +2,8 @@ const { withDangerousMod, withXcodeProject, IOSConfig } = require('@expo/config-
 const fs = require('fs');
 const path = require('path');
 
-const MODEL_SOURCE = 'assets/models/tinyllama-1.1b-chat.gguf';
-const MODEL_NAME = 'tinyllama-1.1b-chat.gguf';
+const MODEL_SOURCE = 'assets/models/qwen2.5-0.5b-instruct-q4_k_m.gguf';
+const MODEL_NAME = 'qwen2.5-0.5b-instruct-q4_k_m.gguf';
 
 const withGguf = (config) => {
     // Android: Copy to assets
