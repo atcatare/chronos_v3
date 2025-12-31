@@ -59,7 +59,7 @@ class ModelService {
             const result = await this.context.completion({
                 prompt: prompt,
                 n_predict: 200, // Limit tokens to roughly 100-150 words
-                temperature: 0.7,
+                temperature: 0.2,
                 top_k: 40,
                 top_p: 0.95,
             });

@@ -50,7 +50,19 @@ export const AIProvider = ({ children }) => {
             }
 
             // Format prompt string with strict summarization directive
-            const promptString = "<|system|>\nYou are a health assistant. Read the journal entries below. Write ONE short paragraph (approx 100 words) summarizing the user's sleep and mood trends. Do NOT list the entries.\n</s>\n<|user|>\n" + entries.map(e => `> ${e.text}`).join("\n\n") + "\n\nWrite the summary now:\n</s>\n<|assistant|>";
+            const formattedEntries = entries.map(e => `Date: ${e.date}\nEntry: "${e.text}"`).join("\n\n");
+            const promptString = `<|system|>
+            You are a health analyst. Analyze the following journal entries. Write ONE single paragraph (approx 100 words) summarizing the user's health trends (sleep, mood, energy).
+            Pay special attention to the most recent entries.
+            Do NOT write a conversation. Do NOT use labels like "User:" or "Assistant:". Just write the summary paragraph.
+            </s>
+            <|user|>
+            Journal Entries:
+            ${formattedEntries}
+            
+            Write the health summary now:
+            </s>
+            <|assistant|>`;
 
             console.log("AI Prompt Sent:", promptString);
 
