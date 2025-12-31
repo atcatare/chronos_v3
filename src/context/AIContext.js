@@ -39,9 +39,10 @@ export const AIProvider = ({ children }) => {
                 }
             }
 
-            // Retrieve all entries and slice the top 5 to prevent context window overflow
+            // Retrieve entries
             const allEntries = await getAllEntries();
-            const entries = allEntries.slice(0, 5);
+            // Slice top 10 to ensure we have enough recent data, but keep context size in check
+            const entries = allEntries.slice(0, 10);
 
             if (!entries || entries.length === 0) {
                 setDailyInsight("Write at least one entry to receive AI insights");
@@ -49,20 +50,24 @@ export const AIProvider = ({ children }) => {
                 return;
             }
 
-            // Format prompt string with strict summarization directive
-            const formattedEntries = entries.map(e => `Date: ${e.date}\nEntry: "${e.text}"`).join("\n\n");
+            // strict formatting
+            const formattedEntries = entries.map(e => `[${e.date}] ${e.text}`).join("\n");
+
+            // We use a "completion" style prompt structure to force a monologue
             const promptString = `<|system|>
-            You are a health analyst. Analyze the following journal entries. Write ONE single paragraph (approx 100 words) summarizing the user's health trends (sleep, mood, energy).
-            Pay special attention to the most recent entries.
-            Do NOT write a conversation. Do NOT use labels like "User:" or "Assistant:". Just write the summary paragraph.
-            </s>
-            <|user|>
-            Journal Entries:
-            ${formattedEntries}
-            
-            Write the health summary now:
-            </s>
-            <|assistant|>`;
+    You are a professional health analyst. 
+    Analyze the journal entries below.
+    Write a single, continuous paragraph (approx 100 words) summarizing the user's sleep, mood, and energy trends.
+    Do not use dialogue tags. Do not write a conversation.
+    </s>
+    <|user|>
+    Journal Entries:
+    ${formattedEntries}
+
+    Please write the summary paragraph now.
+    </s>
+    <|assistant|>
+    Health Analysis:`;
 
             console.log("AI Prompt Sent:", promptString);
 
@@ -73,6 +78,20 @@ export const AIProvider = ({ children }) => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // Helper to remove unwanted "User:" or "Assistant:" hallucinations
+    const cleanOutput = (text) => {
+        // Remove the leading "Health Analysis:" if it was included in the generation
+        let cleaned = text.replace(/^Health Analysis:\s*/i, '');
+
+        // Remove lines that look like dialogue
+        cleaned = cleaned.split('\n').filter(line => {
+            const lower = line.toLowerCase();
+            return !lower.startsWith('user:') && !lower.startsWith('assistant:') && !lower.startsWith('health assistant:');
+        }).join(' ');
+
+        return cleaned.trim();
     };
 
     const ensureModelExists = async () => {
@@ -128,13 +147,15 @@ export const AIProvider = ({ children }) => {
             setDailyInsight("Generating health insights...");
 
             // Run Inference
+            // Run Inference
             const insight = await ModelService.generateInsight(promptString);
+            const finalInsight = cleanOutput(insight);
 
-            setDailyInsight(insight);
+            setDailyInsight(finalInsight);
 
             await AsyncStorage.multiSet([
                 [KEYS.LAST_INSIGHT_DATE, todayString],
-                [KEYS.LAST_INSIGHT_TEXT, insight]
+                [KEYS.LAST_INSIGHT_TEXT, finalInsight]
             ]);
 
         } catch (error) {
